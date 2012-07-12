@@ -1,9 +1,11 @@
 Kinect Changing Background
-====================
+==========================
 
 Isolate users from background.
 
-Uses:
-	- PyOpenNI
-	- Pygame
-	- Numpy
+## Dependencies
+
+  - PyOpenNI + OpenNI
+  - OpenCV
+  - PyGame
+  - Numpy
