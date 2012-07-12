@@ -20,13 +20,20 @@ depth_generator.create(context)
 image_generator = ImageGenerator()
 image_generator.create(context)
 
+user_generator = UserGenerator()
+user_generator.create(context)
+
+user_generator.alternative_view_point_cap.set_view_point(image_generator)
+
 context.start_generating_all()
 
 pygame.init()
 
 screen = pygame.display.set_mode((640, 480))
+background = pygame.image.load('hell.png')
 
 grayscale_palette = tuple([(i, i, i) for i in range(256)])
+palette = [(0, 0, 0), (255, 0, 0), (255, 0, 0), (255, 0, 0)]
 
 pygame.display.set_caption('Kinect Simple Viewer')
 
@@ -38,41 +45,9 @@ total_time = 0
 
 print "Image dimensions ({full_res[0]}, {full_res[1]})".format(full_res=depth_generator.metadata.full_res)
 
-def calc_histogram():
-	global histogram, depth_map
-	max_depth = 0
-	num_points = 0
-
-	depth_map = numpy.asarray(depth_generator.get_tuple_depth_map())
-	reduced_depth_map = depth_map[depth_map != 0]
-	reduced_depth_map = reduced_depth_map[reduced_depth_map < MAX_DEPTH_SIZE]
-
-	max_depth = min(reduced_depth_map.max(), MAX_DEPTH_SIZE)
-
-	histogram = numpy.bincount(reduced_depth_map)
-	num_points = len(reduced_depth_map)
-
-	for i in xrange(1, max_depth): histogram[i] += histogram[i-1]
-
-	if num_points > 0:
-		histogram = 256 * (1.0-(histogram / float(num_points)))
-# calc_histogram
-
-def update_depth_image(surface):
-	calc_histogram()
-
-	depth_frame = numpy.arange(640*480, dtype=numpy.uint32)
-	depth_frame = histogram[depth_map[depth_frame]]
-	depth_frame = depth_frame.reshape(480, 640)
-
-	frame_surface = pygame.transform.rotate(pygame.transform.flip(pygame.surfarray.make_surface(depth_frame), True, False), 90)
-	frame_surface.set_colorkey((0, 0, 0))
-	frame_surface.set_palette(grayscale_palette)
-	surface.blit(frame_surface, (0, 0))
-# update_depth_image
-
-def capture_rgb():
+def capture_rgb(mask):
 	rgb_frame = numpy.fromstring(image_generator.get_raw_image_map_bgr(), dtype=numpy.uint8).reshape(480, 640, 3)
+
 	image = cv.fromarray(rgb_frame)
 	cv.CvtColor(cv.fromarray(rgb_frame), image, cv.CV_BGR2RGB)
 	pyimage = pygame.image.frombuffer(image.tostring(), cv.GetSize(image), 'RGB')
@@ -91,10 +66,17 @@ while running:
 
 	start_time = pygame.time.get_ticks()
 
-	rgb_frame = capture_rgb()
-	screen.blit(rgb_frame, (0, 0))
+	screen.blit(background, (0, 0))
 
-	update_depth_image(screen)
+	mask = numpy.asarray(user_generator.get_user_pixels(0)).reshape(480, 640)
+	x = pygame.transform.rotate(pygame.transform.flip(pygame.surfarray.make_surface(mask), True, False), 90)
+	x.set_palette(palette)
+	x.set_colorkey(THECOLORS['red'])
+
+	rgb_frame = capture_rgb(mask)
+	rgb_frame.blit(x, (0, 0))
+	rgb_frame.set_colorkey(THECOLORS['black'])
+	screen.blit(rgb_frame, (0, 0))
 
 	image_count += 1
 	total_time += pygame.time.get_ticks() - start_time

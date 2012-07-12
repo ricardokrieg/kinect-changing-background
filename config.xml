@@ -26,5 +26,8 @@
 				<Mirror on="true"/>
 			</Configuration>
 		</Node>
+
+		<Node type="User" name="User1" stopOnError="false">
+		</Node>
 	</ProductionNodes>
 </OpenNI>
